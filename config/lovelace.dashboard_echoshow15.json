@@ -1,0 +1,200 @@
+{
+    "version": 1,
+    "minor_version": 1,
+    "key": "lovelace.dashboard_echoshow15",
+    "data": {
+        "config": {
+            "views": [
+                {
+                    "title": "Home",
+                    "sections": [
+                        {
+                            "type": "grid",
+                            "cards": [
+                                {
+                                    "show_state": false,
+                                    "show_name": false,
+                                    "camera_view": "live",
+                                    "fit_mode": "cover",
+                                    "type": "picture-entity",
+                                    "entity": "camera.camera5",
+                                    "grid_options": {
+                                        "columns": "full"
+                                    },
+                                    "show_entity_picture": true
+                                }
+                            ],
+                            "column_span": 2
+                        },
+                        {
+                            "type": "grid",
+                            "cards": [
+                                {
+                                    "show_state": true,
+                                    "show_name": true,
+                                    "camera_view": "live",
+                                    "fit_mode": "cover",
+                                    "type": "picture-entity",
+                                    "entity": "camera.bureau",
+                                    "grid_options": {
+                                        "columns": 24,
+                                        "rows": "auto"
+                                    }
+                                }
+                            ],
+                            "column_span": 2
+                        },
+                        {
+                            "type": "grid",
+                            "cards": [
+                                {
+                                    "type": "iframe",
+                                    "url": "https://dagammla.gitlab.io/keep-silk-open/iframe.html",
+                                    "aspect_ratio": "1%",
+                                    "grid_options": {
+                                        "columns": 3,
+                                        "rows": 2
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "grid",
+                            "cards": [
+                                {
+                                    "type": "heading",
+                                    "heading": "Nouvelle section"
+                                },
+                                {
+                                    "initial_view": "listWeek",
+                                    "type": "calendar",
+                                    "entities": [
+                                        "calendar.anniversaires"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "grid",
+                            "cards": [
+                                {
+                                    "show_state": true,
+                                    "show_name": true,
+                                    "camera_view": "live",
+                                    "fit_mode": "cover",
+                                    "type": "picture-entity",
+                                    "entity": "camera.camera3",
+                                    "grid_options": {
+                                        "columns": 24,
+                                        "rows": "auto"
+                                    }
+                                }
+                            ],
+                            "column_span": 2
+                        }
+                    ],
+                    "cards": []
+                },
+                {
+                    "title": "Réveil enfants",
+                    "path": "reveil-enfants",
+                    "sections": [
+                        {
+                            "type": "grid",
+                            "column_span": 2,
+                            "cards": [
+                                {
+                                    "type": "markdown",
+                                    "grid_options": {
+                                        "columns": "full"
+                                    },
+                                    "content": "{% if is_state('input_boolean.vacances_scolaires', 'on') %}\n## 🏖️ VACANCES\n_Pré-réveil 08h30 · Réveil 09h00 · Journée 09h30_\n{% else %}\n## 🏫 ÉCOLE\n_Pré-réveil 07h00 · Réveil 07h30 · Journée 09h00_\n{% endif %}\n\n_Appuyez sur un bouton pour changer :_"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "grid",
+                            "column_span": 2,
+                            "cards": [
+                                {
+                                    "type": "horizontal-stack",
+                                    "cards": [
+                                        {
+                                            "type": "button",
+                                            "name": "École",
+                                            "icon": "mdi:school",
+                                            "tap_action": {
+                                                "action": "call-service",
+                                                "service": "input_boolean.turn_off",
+                                                "target": {
+                                                    "entity_id": "input_boolean.vacances_scolaires"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "type": "button",
+                                            "name": "Vacances",
+                                            "icon": "mdi:beach",
+                                            "tap_action": {
+                                                "action": "call-service",
+                                                "service": "input_boolean.turn_on",
+                                                "target": {
+                                                    "entity_id": "input_boolean.vacances_scolaires"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "grid",
+                            "column_span": 2,
+                            "cards": [
+                                {
+                                    "type": "button",
+                                    "name": "😴 Sieste 3h (ZZ)",
+                                    "icon": "mdi:sleep",
+                                    "grid_options": {
+                                        "columns": "full"
+                                    },
+                                    "tap_action": {
+                                        "action": "call-service",
+                                        "service": "script.turn_on",
+                                        "target": {
+                                            "entity_id": "script.awtrix_enfants_sieste_toggle"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "title": "Sonnette",
+                    "path": "sonnette",
+                    "icon": "mdi:doorbell",
+                    "sections": [
+                        {
+                            "type": "grid",
+                            "column_span": 2,
+                            "cards": [
+                                {
+                                    "type": "heading",
+                                    "heading": "🔔 Sonnette — dernières visites"
+                                },
+                                {
+                                    "type": "markdown",
+                                    "grid_options": {
+                                        "columns": "full"
+                                    },
+                                    "content": "{{ state_attr('sensor.sonnette_timeline', 'html') | default('<p>Aucune photo pour le moment.</p>') }}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

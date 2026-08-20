@@ -1,0 +1,183 @@
+# Loads default set of integrations. Do not remove.
+default_config:
+
+# Load frontend themes from the themes folder
+frontend:
+  themes: !include_dir_merge_named themes
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+homeassistant:
+  allowlist_external_dirs:
+    - /config/www
+sensor:
+  - platform: dahua_vto
+    name: Dahua VTO
+    host: 192.168.0.215
+    username: admin
+    password: DGAKJACK86
+    scan_interval: 5
+
+  - platform: rest
+    name: jetson_llama_crashes_daily
+    unique_id: jetson_llama_crashes_daily
+    resource: "http://192.168.0.17:8099/crashes?day=yesterday"
+    method: GET
+    scan_interval: 86400
+    timeout: 70
+    value_template: "{{ value_json.total_crashes | default(0) }}"
+    unit_of_measurement: "crashs"
+    icon: mdi:alert-octagon-outline
+    force_update: true
+    json_attributes:
+      - date
+      - status
+      - vision_oom
+      - other_oom
+      - service_crash
+      - unknown_crash
+      - restart_count
+      - loading_model_count
+      - max_alloc_mib
+      - first_crash
+      - last_crash
+      - history_7d_total
+      - retention_days
+      - source
+      - updated_at
+timer:
+  door_lock:
+    name: Door Lock
+    icon: mdi:timer
+  doorbell:
+    name: Doorbell
+    icon: mdi:timer
+  awtrix_sieste_enfants:
+    name: AWTRIX sieste enfants
+    icon: mdi:sleep
+    duration: '03:00:00'
+template:
+  - lock:
+      - name: Door Lock
+        state: "{{ not is_state('timer.door_lock', 'active') }}"
+        optimistic: true
+        lock:
+          action: dahua_vto.open_door
+          target:
+            entity_id: sensor.dahua_vto
+          data:
+            channel: 1
+            short_number: HA
+        unlock:
+          action: dahua_vto.open_door
+          target:
+            entity_id: sensor.dahua_vto
+          data:
+            channel: 1
+            short_number: HA
+  - binary_sensor:
+      - name: Doorbell
+        state: "{{ is_state('timer.doorbell', 'active') }}"
+        icon: mdi:doorbell-video
+      - name: Doorbell
+        state: "{{ is_state('timer.doorbell', 'active') }}"
+        icon: mdi:doorbell-video
+      - name: Doorbell
+        state: "{{ is_state('timer.doorbell', 'active') }}"
+        icon: mdi:doorbell-video
+        icon: mdi:doorbell-video
+
+rest_command:
+  awtrix_enfants_frame:
+    url: "http://192.168.0.48/api/custom?name=reveil_enfants"
+    method: POST
+    content_type: "application/json"
+    timeout: 5
+    payload: "{{ payload }}"
+
+  awtrix_switch_app:
+    url: "http://192.168.0.48/api/switch"
+    method: POST
+    content_type: "application/json"
+    timeout: 5
+    payload: >-
+      {"name": {{ name | to_json }}}
+
+  awtrix_delete_custom:
+    url: >-
+      http://192.168.0.48/api/custom?{{ {"name": name} | urlencode }}
+    method: POST
+    timeout: 5
+  awtrix_notify:
+    url: "http://192.168.0.48/api/notify"
+    method: POST
+    headers:
+      content-type: "application/json"
+    payload: >-
+      {"text": {{ text | to_json }}, "duration": {{ duration | default(10) | int }}}
+  awtrix_custom:
+    url: "http://192.168.0.48/api/custom"
+    method: POST
+    headers:
+      content-type: "application/json"
+    payload: >-
+      {"name": {{ name | default("homeassistant") | to_json }}, "text": {{ text | to_json }}, "color": {{ color | default("#FFFFFF") | to_json }}, "duration": {{ duration | default(10) | int }}}
+  awtrix_custom_icon:
+    url: "http://192.168.0.48/api/custom"
+    method: POST
+    headers:
+      content-type: "application/json"
+    payload: >-
+      {"name": {{ name | default("homeassistant") | to_json }}, "text": {{ text | to_json }}, "color": {{ color | default("#FFFFFF") | to_json }}, "duration": {{ duration | default(10) | int }}, "icon": {{ icon | to_json }}}
+  awtrix_settings:
+    url: "http://192.168.0.48/api/settings"
+    method: POST
+    headers:
+      content-type: "application/json"
+    payload: >-
+      {{ payload }}
+
+# BEGIN AWTRIX REVEIL ENFANTS
+# Helpers et commandes pour le réveil visuel enfants sur Ulanzi AWTRIX 3 (192.168.0.48).
+input_boolean:
+  awtrix_reveil_enfants_actif:
+    name: AWTRIX réveil enfants actif
+    icon: mdi:alarm
+    initial: true
+  vacances_scolaires:
+    name: Vacances scolaires
+    icon: mdi:beach
+    initial: false
+  awtrix_sieste_enfants_active:
+    name: AWTRIX sieste enfants active
+    icon: mdi:sleep
+    initial: false
+
+input_select:
+  awtrix_reveil_enfants_mode:
+    name: Mode AWTRIX réveil enfants
+    options:
+      - nuit
+      - prereveil
+      - reveil
+      - jour
+      - sieste
+    initial: nuit
+    icon: mdi:weather-night
+# END AWTRIX REVEIL ENFANTS
+
+# SONNETTE TIMELINE D340W
+command_line:
+  - sensor:
+      name: Sonnette Timeline
+      unique_id: sonnette_timeline
+      command: /config/scripts/sonnette_timeline.py
+      command_timeout: 20
+      scan_interval: 60
+      value_template: "{{ value_json.count | default(0) }}"
+      json_attributes:
+        - html
+        - events
+
+shell_command:
+  sonnette_cleanup: find /config/www/sonnette-events -type f -mtime +7 -delete

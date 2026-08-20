@@ -1,0 +1,350 @@
+- id: awtrix_enfants_coucher_20h
+  alias: AWTRIX enfants - coucher 20h
+  description: Réveil visuel enfants sur Ulanzi AWTRIX 3.
+  triggers:
+  - trigger: time
+    at: '20:00:00'
+  conditions:
+  - condition: state
+    entity_id: input_boolean.awtrix_reveil_enfants_actif
+    state: 'on'
+  actions:
+  - action: script.awtrix_enfants_nuit
+  mode: single
+- id: awtrix_enfants_prereveil_ecole
+  alias: AWTRIX enfants - pré-réveil école 7h00
+  description: Réveil visuel enfants sur Ulanzi AWTRIX 3.
+  triggers:
+  - trigger: time
+    at: 07:00:00
+  conditions:
+  - condition: state
+    entity_id: input_boolean.awtrix_reveil_enfants_actif
+    state: 'on'
+  - condition: time
+    weekday:
+    - mon
+    - tue
+    - thu
+    - fri
+  - condition: state
+    entity_id: input_boolean.vacances_scolaires
+    state: 'off'
+  actions:
+  - action: script.awtrix_enfants_prereveil
+  mode: single
+- id: awtrix_enfants_reveil_ecole
+  alias: AWTRIX enfants - réveil école 7h30
+  description: Réveil visuel enfants sur Ulanzi AWTRIX 3.
+  triggers:
+  - trigger: time
+    at: 07:30:00
+  conditions:
+  - condition: state
+    entity_id: input_boolean.awtrix_reveil_enfants_actif
+    state: 'on'
+  - condition: time
+    weekday:
+    - mon
+    - tue
+    - thu
+    - fri
+  - condition: state
+    entity_id: input_boolean.vacances_scolaires
+    state: 'off'
+  actions:
+  - action: script.awtrix_enfants_reveil
+  mode: single
+- id: awtrix_enfants_prereveil_we_vacances
+  alias: AWTRIX enfants - pré-réveil week-end/vacances 8h30
+  description: Réveil visuel enfants sur Ulanzi AWTRIX 3.
+  triggers:
+  - trigger: time
+    at: 08:30:00
+  conditions:
+  - condition: state
+    entity_id: input_boolean.awtrix_reveil_enfants_actif
+    state: 'on'
+  - condition: or
+    conditions:
+    - condition: time
+      weekday:
+      - sat
+      - sun
+      - wed
+    - condition: state
+      entity_id: input_boolean.vacances_scolaires
+      state: 'on'
+  actions:
+  - action: script.awtrix_enfants_prereveil
+  mode: single
+- id: awtrix_enfants_reveil_we_vacances
+  alias: AWTRIX enfants - réveil week-end/vacances 9h00
+  description: Réveil visuel enfants sur Ulanzi AWTRIX 3.
+  triggers:
+  - trigger: time
+    at: 09:00:00
+  conditions:
+  - condition: state
+    entity_id: input_boolean.awtrix_reveil_enfants_actif
+    state: 'on'
+  - condition: or
+    conditions:
+    - condition: time
+      weekday:
+      - sat
+      - sun
+      - wed
+    - condition: state
+      entity_id: input_boolean.vacances_scolaires
+      state: 'on'
+  actions:
+  - action: script.awtrix_enfants_reveil
+  mode: single
+- id: awtrix_enfants_mode_jour_apres_reveil
+  alias: AWTRIX enfants - mode journée après réveil
+  description: Réveil visuel enfants sur Ulanzi AWTRIX 3.
+  triggers:
+  - trigger: time
+    at: 09:00:00
+    id: ecole
+  - trigger: time
+    at: 09:30:00
+    id: vacances_week_end
+  conditions:
+  - condition: state
+    entity_id: input_boolean.awtrix_reveil_enfants_actif
+    state: 'on'
+  - condition: state
+    entity_id: input_select.awtrix_reveil_enfants_mode
+    state: reveil
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: ecole
+      - condition: state
+        entity_id: input_boolean.vacances_scolaires
+        state: 'off'
+      - condition: time
+        weekday:
+        - mon
+        - tue
+        - thu
+        - fri
+      sequence:
+      - action: script.awtrix_enfants_jour
+    - conditions:
+      - condition: trigger
+        id: vacances_week_end
+      - condition: or
+        conditions:
+        - condition: state
+          entity_id: input_boolean.vacances_scolaires
+          state: 'on'
+        - condition: time
+          weekday:
+          - sat
+          - sun
+          - wed
+      sequence:
+      - action: script.awtrix_enfants_jour
+  mode: single
+- id: awtrix_enfants_sync_au_demarrage_ha
+  alias: AWTRIX enfants - synchronisation au démarrage HA
+  description: Replace l'AWTRIX dans le bon mode quand Home Assistant redémarre.
+  triggers:
+  - trigger: homeassistant
+    event: start
+  conditions:
+  - condition: state
+    entity_id: input_boolean.awtrix_reveil_enfants_actif
+    state: 'on'
+  actions:
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: '{{ now().strftime(''%H:%M:%S'') >= ''20:00:00'' or (is_state(''input_boolean.vacances_scolaires'',''off'')
+          and now().weekday() < 5 and now().strftime(''%H:%M:%S'') < ''07:00:00'')
+          or ((is_state(''input_boolean.vacances_scolaires'',''on'') or now().weekday()
+          >= 5) and now().strftime(''%H:%M:%S'') < ''08:30:00'') }}'
+      sequence:
+      - action: script.awtrix_enfants_nuit
+    - conditions:
+      - condition: template
+        value_template: '{{ is_state(''input_boolean.vacances_scolaires'',''off'')
+          and now().weekday() < 5 and ''07:00:00'' <= now().strftime(''%H:%M:%S'')
+          < ''07:30:00'' }}'
+      sequence:
+      - action: script.awtrix_enfants_prereveil
+    - conditions:
+      - condition: template
+        value_template: '{{ is_state(''input_boolean.vacances_scolaires'',''off'')
+          and now().weekday() < 5 and ''07:30:00'' <= now().strftime(''%H:%M:%S'')
+          < ''09:00:00'' }}'
+      sequence:
+      - action: script.awtrix_enfants_reveil
+    - conditions:
+      - condition: template
+        value_template: '{{ (is_state(''input_boolean.vacances_scolaires'',''on'')
+          or now().weekday() >= 5) and ''08:30:00'' <= now().strftime(''%H:%M:%S'')
+          < ''09:00:00'' }}'
+      sequence:
+      - action: script.awtrix_enfants_prereveil
+    - conditions:
+      - condition: template
+        value_template: '{{ (is_state(''input_boolean.vacances_scolaires'',''on'')
+          or now().weekday() >= 5) and ''09:00:00'' <= now().strftime(''%H:%M:%S'')
+          < ''09:30:00'' }}'
+      sequence:
+      - action: script.awtrix_enfants_reveil
+    default:
+    - action: script.awtrix_enfants_jour
+  mode: single
+- id: awtrix_enfants_double_centre_sieste
+  alias: AWTRIX enfants - double centre mode sieste
+  description: 'Double appui sur le bouton central AWTRIX en moins de 3s : démarre/arrête
+    la sieste 3h.'
+  triggers:
+  - platform: mqtt
+    topic: awtrix_018b50/stats/buttonSelect
+    payload: '1'
+  conditions:
+  - condition: state
+    entity_id: input_boolean.awtrix_reveil_enfants_actif
+    state: 'on'
+  actions:
+  - wait_for_trigger:
+    - platform: mqtt
+      topic: awtrix_018b50/stats/buttonSelect
+      payload: '1'
+    timeout: 00:00:03
+    continue_on_timeout: false
+  - action: script.awtrix_enfants_sieste_toggle
+  mode: single
+  max_exceeded: silent
+- id: awtrix_enfants_fin_timer_sieste
+  alias: AWTRIX enfants - fin automatique sieste 3h
+  description: Quand le timer sieste AWTRIX se termine, affiche le lever autorisé
+    ou repasse en nuit après 20h.
+  triggers:
+  - platform: event
+    event_type: timer.finished
+    event_data:
+      entity_id: timer.awtrix_sieste_enfants
+  conditions:
+  - condition: state
+    entity_id: input_boolean.awtrix_reveil_enfants_actif
+    state: 'on'
+  actions:
+  - action: script.awtrix_enfants_sieste_fin
+  mode: single
+- id: awtrix_enfants_kuma_resync_webhook
+  alias: AWTRIX enfants - resync via Uptime Kuma
+  description: Webhook appelé par Uptime Kuma quand l’Ulanzi revient UP ; HAOS remet
+    l’affichage cohérent. Ignore les événements DOWN.
+  triggers:
+  - platform: webhook
+    webhook_id: awtrix-ulanzikuma-resync-20260808
+    local_only: true
+    allowed_methods:
+    - POST
+    - GET
+  conditions:
+  - condition: state
+    entity_id: input_boolean.awtrix_reveil_enfants_actif
+    state: 'on'
+  - condition: template
+    value_template: '{{ trigger.json is not defined or trigger.json is none or trigger.json.get(''source'')
+      == ''manual-test'' or trigger.json.get(''heartbeat'', {}).get(''status'') ==
+      1 or trigger.json.get(''status'') in [''up'', ''UP'', 1] }}'
+  actions:
+  - action: script.awtrix_enfants_resync
+  mode: restart
+- id: awtrix_enfants_rafraichir_frame_minute
+  alias: AWTRIX enfants — rafraîchir le frame chaque minute (verrou rotation, sauf
+    jour)
+  description: 'Verrouille l''ecran enfants (frame -> settings ATRANS:false -> switch
+    reveal_enfants) chaque minute POUR TOUS LES MODES SAUF jour. En mode jour (sans
+    sieste) : ne tourne pas, la rotation native Time/Date/Temperature est acceptee
+    (decision Jacques 18/08). La sieste reste verrouillee meme si le helper est sur
+    jour.'
+  triggers:
+  - platform: time_pattern
+    minutes: '*'
+  conditions:
+  - condition: state
+    entity_id: input_boolean.awtrix_reveil_enfants_actif
+    state: 'on'
+  - condition: template
+    value_template: '{{ states(''input_select.awtrix_reveil_enfants_mode'') in [''nuit'',
+      ''prereveil'', ''reveil'', ''sieste''] or is_state(''input_boolean.awtrix_sieste_enfants_active'',
+      ''on'') }}'
+  actions:
+  - variables:
+      mode_effectif: '{{ ''sieste'' if is_state(''input_boolean.awtrix_sieste_enfants_active'',
+        ''on'') else states(''input_select.awtrix_reveil_enfants_mode'') }}'
+      reglages:
+        nuit:
+          BRI: 1
+          ABRI: false
+          ATRANS: false
+        prereveil:
+          BRI: 5
+          ABRI: false
+          ATRANS: false
+        reveil:
+          BRI: 30
+          ABRI: false
+          ATRANS: false
+        sieste:
+          BRI: 2
+          ABRI: false
+          ATRANS: false
+      payload_reglages: '{{ reglages[mode_effectif] | tojson }}'
+  - action: script.turn_on
+    target:
+      entity_id: script.awtrix_enfants_frame
+    data:
+      variables:
+        mode: '{{ mode_effectif }}'
+  - action: rest_command.awtrix_settings
+    data:
+      payload: '{{ payload_reglages }}'
+  - action: rest_command.awtrix_switch_app
+    data:
+      name: reveil_enfants
+  mode: single
+- id: sonnette_timeline
+  alias: Sonnette - Timeline appuis + photos
+  description: Appui sonnette D340W → photo horodatée + événement calendrier Sonnette + purge photos >7j + rafraîchit la timeline.
+  triggers:
+  - trigger: state
+    entity_id: binary_sensor.front_door_visiteur
+    to: 'on'
+  conditions: []
+  actions:
+  - action: camera.snapshot
+    data:
+      entity_id: camera.front_door_fluide
+      filename: /config/www/sonnette-events/{{ ts }}.jpg
+  - action: calendar.create_event
+    data:
+      entity_id: calendar.sonnette
+      start_date_time: '{{ start_dt }}'
+      end_date_time: '{{ end_dt }}'
+      summary: '🔔 {{ hhmm }} · Visiteur'
+      description: 'Appui sonnette à {{ hhmmss }} ({{ datefr }})'
+      location: /local/sonnette-events/{{ ts }}.jpg
+  - action: shell_command.sonnette_cleanup
+  - action: homeassistant.update_entity
+    data:
+      entity_id: sensor.sonnette_timeline
+  mode: single
+  variables:
+    ts: "{{ now().strftime('%Y%m%d_%H%M%S') }}"
+    hhmm: "{{ now().strftime('%H:%M') }}"
+    hhmmss: "{{ now().strftime('%H:%M:%S') }}"
+    datefr: "{{ now().strftime('%d/%m/%Y') }}"
+    start_dt: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+    end_dt: "{{ (now() + timedelta(minutes=1)).strftime('%Y-%m-%d %H:%M:%S') }}"
